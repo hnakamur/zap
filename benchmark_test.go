@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func BenchmarkZapDevelopmentLog(b *testing.B) {
@@ -16,6 +17,7 @@ func BenchmarkZapDevelopmentLog(b *testing.B) {
 	defer os.Remove(tmpfile.Name())
 
 	cfg := zap.NewDevelopmentConfig()
+	cfg.EncoderConfig.EncodeTime = zapcore.ISO8601UTCTimeEncoder
 	cfg.OutputPaths = []string{tmpfile.Name()}
 	logger, err := cfg.Build()
 	if err != nil {

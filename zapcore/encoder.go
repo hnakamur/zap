@@ -115,6 +115,41 @@ func ISO8601TimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
 	enc.AppendString(t.Format("2006-01-02T15:04:05.000Z0700"))
 }
 
+// ISO8601UTCTimeEncoder serializes a time.Time to an ISO8601-formatted string
+// with millisecond precision in UTC.
+func ISO8601UTCTimeEncoder(t time.Time, enc PrimitiveArrayEncoder) {
+	t = t.UTC()
+	year, month, day := t.Date()
+	hour, min, sec := t.Clock()
+	buf := []byte("0000-00-00T00:00:00.000Z")
+	itoa(buf[:4], year, 4)
+	itoa(buf[5:7], int(month), 2)
+	itoa(buf[8:10], day, 2)
+	itoa(buf[11:13], hour, 2)
+	itoa(buf[14:16], min, 2)
+	itoa(buf[17:19], sec, 2)
+	itoa(buf[20:23], t.Nanosecond()/1e6, 3)
+	enc.AppendString(string(buf))
+}
+
+// Cheap integer to fixed-width decimal ASCII.
+// Copied from https://github.com/golang/go/blob/go1.8.1/src/log/log.go#L75-L90
+// and modified for zap.
+// It is users' responsitiblity to pass buf that len(buf) >= wid.
+func itoa(buf []byte, i int, wid int) {
+	// Assemble decimal in reverse order.
+	bp := wid - 1
+	for i >= 10 || wid > 1 {
+		wid--
+		q := i / 10
+		buf[bp] = byte('0' + i - q*10)
+		bp--
+		i = q
+	}
+	// i < 10
+	buf[bp] = byte('0' + i)
+}
+
 // UnmarshalText unmarshals text to a TimeEncoder. "iso8601" and "ISO8601" are
 // unmarshaled to ISO8601TimeEncoder, "millis" is unmarshaled to
 // EpochMillisTimeEncoder, and anything else is unmarshaled to EpochTimeEncoder.
